@@ -1,0 +1,163 @@
+// runtime/provider.proto
+//
+// RuntimeProvider — daemon-side workload execution plugins.
+// Abstracts over Docker, Kubernetes, LXC, or any other container runtime.
+// Capability key: "runtime.provider"
+syntax = "proto3";
+package kleff.plugins.v1;
+option go_package = "github.com/kleffio/contracts/proto/runtime";
+
+import "../common.proto";
+
+service RuntimeProvider {
+  // Workload lifecycle
+  rpc Deploy(DeployRequest)       returns (DeployResponse);
+  rpc Start(StartRequest)         returns (StartResponse);
+  rpc Stop(StopRequest)           returns (StopResponse);
+  rpc Restart(RestartRequest)     returns (RestartResponse);
+  rpc Delete(DeleteRequest)       returns (DeleteResponse);
+
+  // Observation
+  rpc Status(StatusRequest)       returns (StatusResponse);
+  rpc Endpoint(EndpointRequest)   returns (EndpointResponse);
+  rpc Logs(LogsRequest)           returns (stream LogChunk);
+
+  // Project scope (namespace / network setup)
+  rpc EnsureProjectScope(EnsureProjectScopeRequest)     returns (EnsureProjectScopeResponse);
+  rpc TeardownProjectScope(TeardownProjectScopeRequest) returns (TeardownProjectScopeResponse);
+
+  rpc Health(HealthRequest) returns (HealthResponse);
+}
+
+// ── Workload spec ─────────────────────────────────────────────────────────────
+
+message WorkloadSpec {
+  string owner_id          = 1;
+  string project_id        = 2;
+  string project_slug      = 3;
+  string server_id         = 4;
+  string blueprint_id      = 5;
+  string blueprint_version = 6;
+  string image             = 7;
+  map<string, string> env  = 8;
+  int64  memory_bytes      = 9;
+  int64  cpu_millicores    = 10;
+  repeated PortRequirement ports = 11;
+  RuntimeHints hints       = 12;
+}
+
+message PortRequirement {
+  int32  target_port = 1;
+  string protocol    = 2; // "tcp", "udp"
+}
+
+message RuntimeHints {
+  string kubernetes_strategy = 1;
+  bool   expose_udp          = 2;
+  bool   persistent_storage  = 3;
+  string storage_path        = 4;
+  int32  storage_gb          = 5;
+}
+
+// ── Lifecycle ─────────────────────────────────────────────────────────────────
+
+message DeployRequest  { WorkloadSpec spec = 1; }
+message DeployResponse {
+  oneof result {
+    RunningWorkload workload = 1;
+    Error           error   = 2;
+  }
+}
+
+message RunningWorkload {
+  string runtime_ref = 1; // container ID, pod name, etc.
+  string endpoint    = 2; // host:port
+}
+
+message StartRequest   { string runtime_ref = 1; }
+message StartResponse  {
+  oneof result {
+    bool  ok    = 1;
+    Error error = 2;
+  }
+}
+
+message StopRequest    { string runtime_ref = 1; }
+message StopResponse   {
+  oneof result {
+    bool  ok    = 1;
+    Error error = 2;
+  }
+}
+
+message RestartRequest  { string runtime_ref = 1; }
+message RestartResponse {
+  oneof result {
+    bool  ok    = 1;
+    Error error = 2;
+  }
+}
+
+message DeleteRequest  { string runtime_ref = 1; }
+message DeleteResponse {
+  oneof result {
+    bool  ok    = 1;
+    Error error = 2;
+  }
+}
+
+// ── Observation ───────────────────────────────────────────────────────────────
+
+message StatusRequest  { string runtime_ref = 1; }
+message StatusResponse {
+  oneof result {
+    WorkloadStatus status = 1;
+    Error          error  = 2;
+  }
+}
+
+message WorkloadStatus {
+  string runtime_ref     = 1;
+  string state           = 2; // "running", "stopped", "failed", "pending"
+  int64  cpu_millicores  = 3;
+  int64  memory_bytes    = 4;
+  int32  active_players  = 5;
+}
+
+message EndpointRequest  { string runtime_ref = 1; }
+message EndpointResponse {
+  oneof result {
+    string endpoint = 1; // "host:port"
+    Error  error    = 2;
+  }
+}
+
+message LogsRequest {
+  string runtime_ref = 1;
+  bool   follow      = 2;
+  int32  tail_lines  = 3;
+}
+
+message LogChunk {
+  int64  timestamp = 1;
+  string stream    = 2; // "stdout", "stderr"
+  string data      = 3;
+}
+
+// ── Project scope ─────────────────────────────────────────────────────────────
+
+message EnsureProjectScopeRequest  { string project_id = 1; string project_slug = 2; }
+message EnsureProjectScopeResponse {
+  oneof result {
+    bool  ok    = 1;
+    Error error = 2;
+  }
+}
+
+message TeardownProjectScopeRequest  { string project_id = 1; }
+message TeardownProjectScopeResponse {
+  oneof result {
+    bool  ok    = 1;
+    Error error = 2;
+  }
+}

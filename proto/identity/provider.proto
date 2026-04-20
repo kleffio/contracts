@@ -1,45 +1,27 @@
-// plugin-sdk/v1/proto/idp.proto
+// identity/provider.proto
 //
-// IdentityPlugin gRPC service — all IDP plugins must implement this.
+// IdentityProvider — AuthN plugins (Keycloak, Authentik, etc.)
+// Handles login, token validation, and OIDC config.
+// Capability key: "identity.provider"
 syntax = "proto3";
 package kleff.plugins.v1;
-option go_package = "github.com/kleffio/plugin-sdk-go/v1";
+option go_package = "github.com/kleffio/contracts/proto/identity";
 
-import "common.proto";
+import "../common.proto";
 
-// IdentityPlugin is the gRPC service all IDP plugins must implement.
-service IdentityPlugin {
-  // Login authenticates a user with username and password.
-  rpc Login(LoginRequest) returns (LoginResponse);
-
-  // Register creates a new user in the identity provider.
-  // Return Error.Code = NOT_SUPPORTED if not implemented.
-  rpc Register(RegisterRequest) returns (RegisterResponse);
-
-  // GetUser retrieves a user by their provider ID.
-  // Return Error.Code = NOT_SUPPORTED if not implemented.
-  rpc GetUser(GetUserRequest) returns (GetUserResponse);
-
-  // ValidateToken verifies a bearer token and returns its claims.
-  // The platform calls this on every authenticated request.
+service IdentityProvider {
+  rpc Login(LoginRequest)                 returns (LoginResponse);
+  rpc Register(RegisterRequest)           returns (RegisterResponse);
+  rpc GetUser(GetUserRequest)             returns (GetUserResponse);
   rpc ValidateToken(ValidateTokenRequest) returns (ValidateTokenResponse);
-
-  // GetOIDCConfig returns the OIDC parameters the frontend needs to
-  // initialise its OIDC client (authority, client_id, scopes, etc.).
   rpc GetOIDCConfig(GetOIDCConfigRequest) returns (GetOIDCConfigResponse);
-
-  // RefreshToken exchanges a refresh token for a new token set.
-  rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
-
-  // Health returns the plugin's current health status.
-  rpc Health(HealthRequest) returns (HealthResponse);
+  rpc RefreshToken(RefreshTokenRequest)   returns (RefreshTokenResponse);
+  rpc Health(HealthRequest)               returns (HealthResponse);
 }
 
 // ── Token validation ──────────────────────────────────────────────────────────
 
-message ValidateTokenRequest {
-  string token = 1;
-}
+message ValidateTokenRequest  { string token = 1; }
 
 message TokenClaims {
   string          subject = 1;
@@ -74,9 +56,7 @@ message GetOIDCConfigResponse {
 
 // ── Token refresh ─────────────────────────────────────────────────────────────
 
-message RefreshTokenRequest {
-  string refresh_token = 1;
-}
+message RefreshTokenRequest  { string refresh_token = 1; }
 
 message RefreshTokenResponse {
   oneof result {
@@ -123,9 +103,7 @@ message RegisterResponse {
   }
 }
 
-message GetUserRequest {
-  string user_id = 1;
-}
+message GetUserRequest  { string user_id = 1; }
 
 message GetUserResponse {
   oneof result {

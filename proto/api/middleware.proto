@@ -1,0 +1,29 @@
+// api/middleware.proto
+//
+// APIMiddleware — plugins that intercept every authenticated HTTP request.
+// Called before the handler; can reject, modify headers, or enrich context.
+// Capability key: "api.middleware"
+syntax = "proto3";
+package kleff.plugins.v1;
+option go_package = "github.com/kleffio/contracts/proto/api";
+
+import "../common.proto";
+
+service APIMiddleware {
+  rpc OnRequest(MiddlewareRequest) returns (MiddlewareResponse);
+}
+
+message MiddlewareRequest {
+  string user_id          = 1;
+  repeated string roles   = 2;
+  string method           = 3;
+  string path             = 4;
+  map<string, string> headers = 5;
+}
+
+message MiddlewareResponse {
+  bool   allow                    = 1;
+  map<string, string> add_headers = 2; // injected into the upstream request
+  string deny_reason              = 3; // shown to caller if allow = false
+  int32  deny_status              = 4; // HTTP status if allow = false (default 403)
+}

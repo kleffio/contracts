@@ -1,0 +1,132 @@
+// billing/framework.proto
+//
+// BillingFramework — usage metering and entitlement plugins.
+// Tracks resource consumption and enforces plan limits.
+// Capability key: "billing.framework"
+syntax = "proto3";
+package kleff.plugins.v1;
+option go_package = "github.com/kleffio/contracts/proto/billing";
+
+import "../common.proto";
+
+service BillingFramework {
+  // Usage metering
+  rpc RecordUsage(RecordUsageRequest)         returns (RecordUsageResponse);
+  rpc GetUsageSummary(GetUsageSummaryRequest) returns (GetUsageSummaryResponse);
+
+  // Plans
+  rpc ListPlans(ListPlansRequest)             returns (ListPlansResponse);
+  rpc GetCurrentPlan(GetCurrentPlanRequest)   returns (GetCurrentPlanResponse);
+
+  // Entitlements
+  rpc CheckEntitlement(CheckEntitlementRequest) returns (CheckEntitlementResponse);
+  rpc GetEntitlements(GetEntitlementsRequest)   returns (GetEntitlementsResponse);
+
+  rpc Health(HealthRequest) returns (HealthResponse);
+}
+
+// ── Usage ─────────────────────────────────────────────────────────────────────
+
+message RecordUsageRequest {
+  string organization_id = 1;
+  string meter_key       = 2; // e.g. "server.hours", "bandwidth.gb"
+  double quantity        = 3;
+  int64  timestamp       = 4;
+  map<string, string> labels = 5;
+}
+
+message RecordUsageResponse {
+  oneof result {
+    bool  ok    = 1;
+    Error error = 2;
+  }
+}
+
+message GetUsageSummaryRequest {
+  string organization_id = 1;
+  int64  period_start    = 2;
+  int64  period_end      = 3;
+}
+
+message GetUsageSummaryResponse {
+  oneof result {
+    UsageSummary summary = 1;
+    Error        error   = 2;
+  }
+}
+
+message UsageSummary {
+  repeated UsageLine lines = 1;
+}
+
+message UsageLine {
+  string meter_key  = 1;
+  double quantity   = 2;
+  string unit       = 3;
+}
+
+// ── Plans ─────────────────────────────────────────────────────────────────────
+
+message ListPlansRequest {}
+
+message ListPlansResponse {
+  oneof result {
+    PlanList plans = 1;
+    Error    error = 2;
+  }
+}
+
+message PlanList { repeated Plan items = 1; }
+
+message Plan {
+  string plan_id      = 1;
+  string name         = 2;
+  string description  = 3;
+  int64  price_cents  = 4;
+  string currency     = 5;
+  string interval     = 6; // "month", "year"
+  repeated Entitlement entitlements = 7;
+}
+
+message GetCurrentPlanRequest  { string organization_id = 1; }
+message GetCurrentPlanResponse {
+  oneof result {
+    Plan  plan  = 1;
+    Error error = 2;
+  }
+}
+
+// ── Entitlements ──────────────────────────────────────────────────────────────
+
+message CheckEntitlementRequest {
+  string organization_id = 1;
+  string feature_key     = 2; // e.g. "servers.max", "nodes.max", "plugins.custom"
+}
+
+message CheckEntitlementResponse {
+  oneof result {
+    EntitlementStatus status = 1;
+    Error             error  = 2;
+  }
+}
+
+message EntitlementStatus {
+  bool   allowed   = 1;
+  int64  limit     = 2; // -1 = unlimited
+  int64  used      = 3;
+}
+
+message GetEntitlementsRequest  { string organization_id = 1; }
+message GetEntitlementsResponse {
+  oneof result {
+    EntitlementList entitlements = 1;
+    Error           error        = 2;
+  }
+}
+
+message EntitlementList { repeated Entitlement items = 1; }
+
+message Entitlement {
+  string feature_key = 1;
+  int64  limit       = 2; // -1 = unlimited
+}

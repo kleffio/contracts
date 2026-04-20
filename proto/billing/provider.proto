@@ -1,0 +1,203 @@
+// billing/provider.proto
+//
+// BillingProvider — payment processor plugins (Stripe, Paddle, etc.)
+// Handles subscriptions, invoices, and payment methods.
+// Capability key: "billing.provider"
+syntax = "proto3";
+package kleff.plugins.v1;
+option go_package = "github.com/kleffio/contracts/proto/billing";
+
+import "../common.proto";
+
+service BillingProvider {
+  // Customer
+  rpc CreateCustomer(CreateCustomerRequest)           returns (CreateCustomerResponse);
+  rpc GetCustomer(GetCustomerRequest)                 returns (GetCustomerResponse);
+
+  // Subscriptions
+  rpc CreateSubscription(CreateSubscriptionRequest)   returns (CreateSubscriptionResponse);
+  rpc UpdateSubscription(UpdateSubscriptionRequest)   returns (UpdateSubscriptionResponse);
+  rpc CancelSubscription(CancelSubscriptionRequest)   returns (CancelSubscriptionResponse);
+  rpc GetSubscription(GetSubscriptionRequest)         returns (GetSubscriptionResponse);
+
+  // Invoices
+  rpc ListInvoices(ListInvoicesRequest)               returns (ListInvoicesResponse);
+  rpc GetUpcomingInvoice(GetUpcomingInvoiceRequest)   returns (GetUpcomingInvoiceResponse);
+
+  // Payment methods
+  rpc CreatePaymentMethod(CreatePaymentMethodRequest) returns (CreatePaymentMethodResponse);
+  rpc ListPaymentMethods(ListPaymentMethodsRequest)   returns (ListPaymentMethodsResponse);
+  rpc DeletePaymentMethod(DeletePaymentMethodRequest) returns (DeletePaymentMethodResponse);
+
+  // Checkout
+  rpc CreateCheckoutSession(CreateCheckoutSessionRequest) returns (CreateCheckoutSessionResponse);
+
+  rpc Health(HealthRequest) returns (HealthResponse);
+}
+
+// ── Customer ──────────────────────────────────────────────────────────────────
+
+message CreateCustomerRequest {
+  string user_id = 1;
+  string email   = 2;
+  string name    = 3;
+}
+
+message CreateCustomerResponse {
+  oneof result {
+    string customer_id = 1;
+    Error  error       = 2;
+  }
+}
+
+message GetCustomerRequest  { string customer_id = 1; }
+message GetCustomerResponse {
+  oneof result {
+    Customer customer = 1;
+    Error    error    = 2;
+  }
+}
+
+message Customer {
+  string customer_id = 1;
+  string email       = 2;
+  string name        = 3;
+}
+
+// ── Subscriptions ─────────────────────────────────────────────────────────────
+
+message CreateSubscriptionRequest {
+  string customer_id      = 1;
+  string plan_id          = 2;
+  string payment_method_id = 3;
+}
+
+message CreateSubscriptionResponse {
+  oneof result {
+    Subscription subscription = 1;
+    Error        error        = 2;
+  }
+}
+
+message UpdateSubscriptionRequest {
+  string subscription_id = 1;
+  string plan_id         = 2;
+}
+
+message UpdateSubscriptionResponse {
+  oneof result {
+    Subscription subscription = 1;
+    Error        error        = 2;
+  }
+}
+
+message CancelSubscriptionRequest  { string subscription_id = 1; bool immediately = 2; }
+message CancelSubscriptionResponse {
+  oneof result {
+    bool  ok    = 1;
+    Error error = 2;
+  }
+}
+
+message GetSubscriptionRequest  { string subscription_id = 1; }
+message GetSubscriptionResponse {
+  oneof result {
+    Subscription subscription = 1;
+    Error        error        = 2;
+  }
+}
+
+message Subscription {
+  string subscription_id = 1;
+  string customer_id     = 2;
+  string plan_id         = 3;
+  string status          = 4; // "active", "canceled", "past_due", "trialing"
+  int64  current_period_end = 5;
+}
+
+// ── Invoices ──────────────────────────────────────────────────────────────────
+
+message ListInvoicesRequest  { string customer_id = 1; int32 limit = 2; }
+message ListInvoicesResponse {
+  oneof result {
+    InvoiceList invoices = 1;
+    Error       error    = 2;
+  }
+}
+
+message GetUpcomingInvoiceRequest  { string customer_id = 1; }
+message GetUpcomingInvoiceResponse {
+  oneof result {
+    Invoice invoice = 1;
+    Error   error   = 2;
+  }
+}
+
+message InvoiceList { repeated Invoice items = 1; }
+
+message Invoice {
+  string invoice_id  = 1;
+  string customer_id = 2;
+  int64  amount      = 3; // in cents
+  string currency    = 4;
+  string status      = 5; // "draft", "open", "paid", "void"
+  int64  due_date    = 6;
+  string hosted_url  = 7;
+}
+
+// ── Payment methods ───────────────────────────────────────────────────────────
+
+message CreatePaymentMethodRequest {
+  string customer_id = 1;
+  string token       = 2; // provider-specific setup token
+}
+
+message CreatePaymentMethodResponse {
+  oneof result {
+    string payment_method_id = 1;
+    Error  error             = 2;
+  }
+}
+
+message ListPaymentMethodsRequest  { string customer_id = 1; }
+message ListPaymentMethodsResponse {
+  oneof result {
+    PaymentMethodList methods = 1;
+    Error             error   = 2;
+  }
+}
+
+message PaymentMethodList { repeated PaymentMethod items = 1; }
+
+message PaymentMethod {
+  string payment_method_id = 1;
+  string type              = 2; // "card", "bank_account"
+  string last4             = 3;
+  string brand             = 4;
+  int32  exp_month         = 5;
+  int32  exp_year          = 6;
+}
+
+message DeletePaymentMethodRequest  { string payment_method_id = 1; }
+message DeletePaymentMethodResponse {
+  oneof result {
+    bool  ok    = 1;
+    Error error = 2;
+  }
+}
+
+// ── Checkout ──────────────────────────────────────────────────────────────────
+
+message CreateCheckoutSessionRequest {
+  string customer_id  = 1;
+  string plan_id      = 2;
+  string success_url  = 3;
+  string cancel_url   = 4;
+}
+
+message CreateCheckoutSessionResponse {
+  oneof result {
+    string checkout_url = 1;
+    Error  error        = 2;
+  }
+}

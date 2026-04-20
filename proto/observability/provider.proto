@@ -1,0 +1,130 @@
+// observability/provider.proto
+//
+// ObservabilityProvider — backend sink plugins (Prometheus, Datadog, Grafana, etc.)
+// Receives metrics, logs, and traces from the platform.
+// Capability key: "observability.provider"
+syntax = "proto3";
+package kleff.plugins.v1;
+option go_package = "github.com/kleffio/contracts/proto/observability";
+
+import "../common.proto";
+
+service ObservabilityProvider {
+  // Metrics
+  rpc PushMetrics(PushMetricsRequest)   returns (PushMetricsResponse);
+  rpc QueryMetrics(QueryMetricsRequest) returns (QueryMetricsResponse);
+
+  // Logs
+  rpc PushLogs(PushLogsRequest)         returns (PushLogsResponse);
+  rpc QueryLogs(QueryLogsRequest)       returns (QueryLogsResponse);
+
+  // Traces
+  rpc PushTrace(PushTraceRequest)       returns (PushTraceResponse);
+
+  rpc Health(HealthRequest)             returns (HealthResponse);
+}
+
+// ── Metrics ───────────────────────────────────────────────────────────────────
+
+message PushMetricsRequest {
+  repeated Metric metrics = 1;
+}
+
+message PushMetricsResponse {
+  oneof result {
+    bool  ok    = 1;
+    Error error = 2;
+  }
+}
+
+message Metric {
+  string name                 = 1;
+  double value                = 2;
+  int64  timestamp            = 3;
+  map<string, string> labels  = 4;
+  string type                 = 5; // "gauge", "counter", "histogram"
+}
+
+message QueryMetricsRequest {
+  string query      = 1; // PromQL or provider-specific
+  int64  start      = 2;
+  int64  end        = 3;
+  int64  step       = 4; // seconds
+}
+
+message QueryMetricsResponse {
+  oneof result {
+    MetricSeries series = 1;
+    Error        error  = 2;
+  }
+}
+
+message MetricSeries {
+  repeated MetricPoint points = 1;
+}
+
+message MetricPoint {
+  int64  timestamp = 1;
+  double value     = 2;
+}
+
+// ── Logs ──────────────────────────────────────────────────────────────────────
+
+message PushLogsRequest {
+  repeated LogEntry entries = 1;
+}
+
+message PushLogsResponse {
+  oneof result {
+    bool  ok    = 1;
+    Error error = 2;
+  }
+}
+
+message LogEntry {
+  int64               timestamp  = 1;
+  string              level      = 2; // "debug", "info", "warn", "error"
+  string              message    = 3;
+  map<string, string> attributes = 4;
+  string              source     = 5; // workload_id, node_id, etc.
+}
+
+message QueryLogsRequest {
+  string query    = 1;
+  int64  start    = 2;
+  int64  end      = 3;
+  int32  limit    = 4;
+}
+
+message QueryLogsResponse {
+  oneof result {
+    LogResults results = 1;
+    Error      error   = 2;
+  }
+}
+
+message LogResults { repeated LogEntry entries = 1; }
+
+// ── Traces ────────────────────────────────────────────────────────────────────
+
+message PushTraceRequest {
+  repeated Span spans = 1;
+}
+
+message PushTraceResponse {
+  oneof result {
+    bool  ok    = 1;
+    Error error = 2;
+  }
+}
+
+message Span {
+  string trace_id   = 1;
+  string span_id    = 2;
+  string parent_id  = 3;
+  string name       = 4;
+  int64  start_time = 5;
+  int64  end_time   = 6;
+  map<string, string> attributes = 7;
+  string status     = 8; // "ok", "error"
+}

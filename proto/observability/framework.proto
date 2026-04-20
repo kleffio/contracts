@@ -1,0 +1,172 @@
+// observability/framework.proto
+//
+// ObservabilityFramework — alerting and dashboard platform plugins.
+// Manages alerts, SLOs, and dashboards on top of observability providers.
+// Capability key: "observability.framework"
+syntax = "proto3";
+package kleff.plugins.v1;
+option go_package = "github.com/kleffio/contracts/proto/observability";
+
+import "../common.proto";
+
+service ObservabilityFramework {
+  // Alerts
+  rpc CreateAlert(CreateAlertRequest)   returns (CreateAlertResponse);
+  rpc UpdateAlert(UpdateAlertRequest)   returns (UpdateAlertResponse);
+  rpc DeleteAlert(DeleteAlertRequest)   returns (DeleteAlertResponse);
+  rpc ListAlerts(ListAlertsRequest)     returns (ListAlertsResponse);
+  rpc GetAlertStatus(GetAlertStatusRequest) returns (GetAlertStatusResponse);
+
+  // Dashboards
+  rpc CreateDashboard(CreateDashboardRequest) returns (CreateDashboardResponse);
+  rpc GetDashboard(GetDashboardRequest)       returns (GetDashboardResponse);
+  rpc ListDashboards(ListDashboardsRequest)   returns (ListDashboardsResponse);
+  rpc DeleteDashboard(DeleteDashboardRequest) returns (DeleteDashboardResponse);
+
+  // SLOs
+  rpc CreateSLO(CreateSLORequest)       returns (CreateSLOResponse);
+  rpc GetSLOStatus(GetSLOStatusRequest) returns (GetSLOStatusResponse);
+
+  rpc Health(HealthRequest)             returns (HealthResponse);
+}
+
+// ── Alerts ────────────────────────────────────────────────────────────────────
+
+message AlertRule {
+  string name        = 1;
+  string query       = 2; // metric query expression
+  string condition   = 3; // e.g. "> 0.9"
+  int64  for_seconds = 4; // how long condition must hold
+  string severity    = 5; // "info", "warning", "critical"
+  map<string, string> labels = 6;
+}
+
+message CreateAlertRequest  { AlertRule rule = 1; }
+message CreateAlertResponse {
+  oneof result {
+    string alert_id = 1;
+    Error  error    = 2;
+  }
+}
+
+message UpdateAlertRequest  { string alert_id = 1; AlertRule rule = 2; }
+message UpdateAlertResponse {
+  oneof result {
+    bool  ok    = 1;
+    Error error = 2;
+  }
+}
+
+message DeleteAlertRequest  { string alert_id = 1; }
+message DeleteAlertResponse {
+  oneof result {
+    bool  ok    = 1;
+    Error error = 2;
+  }
+}
+
+message ListAlertsRequest  {}
+message ListAlertsResponse {
+  oneof result {
+    AlertList alerts = 1;
+    Error     error  = 2;
+  }
+}
+
+message AlertList { repeated AlertEntry items = 1; }
+
+message AlertEntry {
+  string    alert_id = 1;
+  AlertRule rule     = 2;
+  string    state    = 3; // "ok", "pending", "firing"
+}
+
+message GetAlertStatusRequest  { string alert_id = 1; }
+message GetAlertStatusResponse {
+  oneof result {
+    AlertEntry alert = 1;
+    Error      error = 2;
+  }
+}
+
+// ── Dashboards ────────────────────────────────────────────────────────────────
+
+message Dashboard {
+  string title        = 1;
+  string description  = 2;
+  string spec_json    = 3; // provider-specific dashboard JSON (Grafana, etc.)
+}
+
+message CreateDashboardRequest  { Dashboard dashboard = 1; }
+message CreateDashboardResponse {
+  oneof result {
+    string dashboard_id  = 1;
+    Error  error         = 2;
+  }
+}
+
+message GetDashboardRequest  { string dashboard_id = 1; }
+message GetDashboardResponse {
+  oneof result {
+    DashboardEntry dashboard = 1;
+    Error          error     = 2;
+  }
+}
+
+message DashboardEntry {
+  string    dashboard_id = 1;
+  Dashboard dashboard    = 2;
+  string    url          = 3;
+}
+
+message ListDashboardsRequest  {}
+message ListDashboardsResponse {
+  oneof result {
+    DashboardList dashboards = 1;
+    Error         error      = 2;
+  }
+}
+
+message DashboardList { repeated DashboardEntry items = 1; }
+
+message DeleteDashboardRequest  { string dashboard_id = 1; }
+message DeleteDashboardResponse {
+  oneof result {
+    bool  ok    = 1;
+    Error error = 2;
+  }
+}
+
+// ── SLOs ──────────────────────────────────────────────────────────────────────
+
+message SLODefinition {
+  string name          = 1;
+  string description   = 2;
+  string sli_query     = 3; // good-events / total-events query
+  double target        = 4; // e.g. 0.999 for 99.9%
+  int64  window_days   = 5;
+}
+
+message CreateSLORequest  { SLODefinition slo = 1; }
+message CreateSLOResponse {
+  oneof result {
+    string slo_id = 1;
+    Error  error  = 2;
+  }
+}
+
+message GetSLOStatusRequest  { string slo_id = 1; }
+message GetSLOStatusResponse {
+  oneof result {
+    SLOStatus status = 1;
+    Error     error  = 2;
+  }
+}
+
+message SLOStatus {
+  string slo_id          = 1;
+  double current_ratio   = 2;
+  double target          = 3;
+  double error_budget    = 4; // remaining fraction of allowed errors
+  bool   breached        = 5;
+}

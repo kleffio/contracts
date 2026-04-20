@@ -1,0 +1,60 @@
+// ui/manifest.proto
+//
+// UIManifest — plugins that contribute frontend components and navigation.
+// Capability key: "ui.manifest"
+syntax = "proto3";
+package kleff.plugins.v1;
+option go_package = "github.com/kleffio/contracts/proto/ui";
+
+import "../common.proto";
+
+service UIManifest {
+  rpc GetUIManifest(GetUIManifestRequest) returns (GetUIManifestResponse);
+}
+
+message GetUIManifestRequest {}
+
+message GetUIManifestResponse {
+  oneof result {
+    UIManifest manifest = 1;
+    Error      error    = 2;
+  }
+}
+
+message UIManifest {
+  repeated NavItem       nav_items        = 1;
+  repeated SettingsPage  settings_pages   = 2;
+  repeated ProfileSection profile_sections = 3;
+  LoginConfig            login_config     = 4;
+  SignupConfig           signup_config    = 5;
+  string                 bundle_url       = 6; // JS module URL for dynamic loading
+}
+
+message NavItem {
+  string href  = 1;
+  string label = 2;
+  string icon  = 3;
+}
+
+message SettingsPage {
+  string href  = 1;
+  string label = 2;
+  string slot  = 3; // component slot ID in the bundle
+}
+
+message ProfileSection {
+  string label = 1;
+  string slot  = 2;
+}
+
+message LoginConfig {
+  bool   show_form     = 1; // render username/password form
+  string redirect_url  = 2; // OIDC redirect if show_form = false
+  string provider_name = 3;
+  string provider_logo = 4;
+}
+
+message SignupConfig {
+  bool   enabled      = 1;
+  string redirect_url = 2;
+}
