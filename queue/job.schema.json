@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kleffio/contracts/queue/job.schema.json",
+  "title": "DaemonJob",
+  "description": "Wire format for jobs enqueued by the platform API and consumed by the daemon. Both sides must agree on field names exactly.",
+  "type": "object",
+  "required": ["job_id", "job_type", "resource_id", "payload", "status", "attempts", "max_attempts", "created_at"],
+  "properties": {
+    "job_id":       { "type": "string", "description": "Unique job identifier (KSUID)" },
+    "job_type":     { "$ref": "#/$defs/JobType" },
+    "resource_id":  { "type": "string", "description": "ID of the workload/server this job targets" },
+    "payload":      { "$ref": "#/$defs/WorkloadSpec" },
+    "status":       { "type": "string", "enum": ["pending"] },
+    "attempts":     { "type": "integer", "minimum": 0 },
+    "max_attempts": { "type": "integer", "minimum": 1, "default": 5 },
+    "created_at":   { "type": "string", "format": "date-time" }
+  },
+
+  "$defs": {
+    "JobType": {
+      "type": "string",
+      "enum": [
+        "server.provision",
+        "server.start",
+        "server.stop",
+        "server.restart",
+        "server.delete"
+      ]
+    },
+
+    "WorkloadSpec": {
+      "type": "object",
+      "required": ["owner_id", "server_id", "blueprint_id", "project_id", "project_slug", "image"],
+      "properties": {
+        "owner_id":          { "type": "string" },
+        "server_id":         { "type": "string" },
+        "blueprint_id":      { "type": "string" },
+        "project_id":        { "type": "string" },
+        "project_slug":      { "type": "string" },
+        "image":             { "type": "string" },
+        "blueprint_version": { "type": "string" },
+        "env_overrides":     { "type": "object", "additionalProperties": { "type": "string" } },
+        "memory_bytes":      { "type": "integer" },
+        "cpu_millicores":    { "type": "integer" },
+        "port_requirements": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/PortRequirement" }
+        },
+        "runtime_hints":     { "$ref": "#/$defs/RuntimeHints" }
+      }
+    },
+
+    "PortRequirement": {
+      "type": "object",
+      "required": ["target_port", "protocol"],
+      "properties": {
+        "target_port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "protocol":    { "type": "string", "enum": ["tcp", "udp"] }
+      }
+    },
+
+    "RuntimeHints": {
+      "type": "object",
+      "properties": {
+        "kubernetes_strategy": { "type": "string" },
+        "expose_udp":          { "type": "boolean", "default": false },
+        "persistent_storage":  { "type": "boolean", "default": false },
+        "storage_path":        { "type": "string" },
+        "storage_gb":          { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}
