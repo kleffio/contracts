@@ -4,9 +4,9 @@
 // Capability key: "api.routes"
 syntax = "proto3";
 package kleff.plugins.v1;
-option go_package = "github.com/kleffio/contracts/proto/api";
+option go_package = "github.com/kleffio/plugin-sdk-go/v1;pluginsv1";
 
-import "../common.proto";
+import "common.proto";
 
 service APIRoutes {
   // Called once at plugin registration to declare owned routes.
@@ -40,6 +40,7 @@ message HandleRequest {
   map<string, string> path_params = 5;
   string user_id                  = 6;
   repeated string roles           = 7;
+  string raw_query                = 8;
 }
 
 message HandleResponse {

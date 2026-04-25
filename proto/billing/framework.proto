@@ -7,7 +7,7 @@ syntax = "proto3";
 package kleff.plugins.v1;
 option go_package = "github.com/kleffio/contracts/proto/billing";
 
-import "../common.proto";
+import "common.proto";
 
 service BillingFramework {
   // Usage metering

@@ -4,11 +4,11 @@
 // Capability key: "ui.manifest"
 syntax = "proto3";
 package kleff.plugins.v1;
-option go_package = "github.com/kleffio/contracts/proto/ui";
+option go_package = "github.com/kleffio/plugin-sdk-go/v1;pluginsv1";
 
-import "../common.proto";
+import "common.proto";
 
-service UIManifest {
+service UIManifestService {
   rpc GetUIManifest(GetUIManifestRequest) returns (GetUIManifestResponse);
 }
 
@@ -28,6 +28,7 @@ message UIManifest {
   LoginConfig            login_config     = 4;
   SignupConfig           signup_config    = 5;
   string                 bundle_url       = 6; // JS module URL for dynamic loading
+  string                 plugin_id        = 7; // set by the platform after fetching
 }
 
 message NavItem {
@@ -37,14 +38,19 @@ message NavItem {
 }
 
 message SettingsPage {
-  string href  = 1;
-  string label = 2;
-  string slot  = 3; // component slot ID in the bundle
+  string href      = 1;
+  string label     = 2;
+  string slot      = 3; // component slot ID in the bundle
+  string iframe_url = 4; // if set, embed as iframe
 }
 
 message ProfileSection {
-  string label = 1;
-  string slot  = 2;
+  string label        = 1;
+  string slot         = 2; // component slot ID in the bundle
+  string id           = 3; // unique identifier for this section
+  string description  = 4;
+  string iframe_url   = 5; // if set, embed as iframe
+  repeated string actions = 6; // native action keys (e.g. "change_password")
 }
 
 message LoginConfig {

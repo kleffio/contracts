@@ -5,9 +5,9 @@
 // Capability key: "api.middleware"
 syntax = "proto3";
 package kleff.plugins.v1;
-option go_package = "github.com/kleffio/contracts/proto/api";
+option go_package = "github.com/kleffio/plugin-sdk-go/v1;pluginsv1";
 
-import "../common.proto";
+import "common.proto";
 
 service APIMiddleware {
   rpc OnRequest(MiddlewareRequest) returns (MiddlewareResponse);
