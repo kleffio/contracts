@@ -6,7 +6,7 @@ syntax = "proto3";
 package kleff.plugins.v1;
 option go_package = "github.com/kleffio/contracts/proto/api";
 
-import "../common.proto";
+import "common.proto";
 
 service APIRoutes {
   // Called once at plugin registration to declare owned routes.

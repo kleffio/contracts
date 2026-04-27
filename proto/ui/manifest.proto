@@ -6,9 +6,9 @@ syntax = "proto3";
 package kleff.plugins.v1;
 option go_package = "github.com/kleffio/contracts/proto/ui";
 
-import "../common.proto";
+import "common.proto";
 
-service UIManifest {
+service UIManifestService {
   rpc GetUIManifest(GetUIManifestRequest) returns (GetUIManifestResponse);
 }
 
