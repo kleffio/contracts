@@ -5,7 +5,7 @@
 // Capability key: "identity.provider"
 syntax = "proto3";
 package kleff.plugins.v1;
-option go_package = "github.com/kleffio/contracts/proto/identity";
+option go_package = "github.com/kleffio/plugin-sdk-go/v1;pluginsv1";
 
 import "common.proto";
 
@@ -24,9 +24,10 @@ service IdentityProvider {
 message ValidateTokenRequest  { string token = 1; }
 
 message TokenClaims {
-  string          subject = 1;
-  string          email   = 2;
-  repeated string roles   = 3;
+  string          subject  = 1;
+  string          email    = 2;
+  repeated string roles    = 3;
+  string          username = 4;
 }
 
 message ValidateTokenResponse {
@@ -41,10 +42,16 @@ message ValidateTokenResponse {
 message GetOIDCConfigRequest {}
 
 message OIDCConfig {
-  string          authority = 1;
-  string          client_id = 2;
-  string          jwks_uri  = 3;
-  repeated string scopes    = 4;
+  string          authority              = 1;
+  string          client_id             = 2;
+  string          jwks_uri              = 3;
+  repeated string scopes                = 4;
+  string          auth_mode             = 5; // "headless" or "redirect"
+  string          token_endpoint        = 6;
+  string          authorization_endpoint = 7;
+  string          userinfo_endpoint     = 8;
+  string          end_session_endpoint  = 9;
+  string          internal_token_endpoint = 10; // Docker-internal URL for server-side PKCE proxy
 }
 
 message GetOIDCConfigResponse {

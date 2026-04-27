@@ -5,7 +5,7 @@
 // only validates tokens. Capability key: "identity.framework"
 syntax = "proto3";
 package kleff.plugins.v1;
-option go_package = "github.com/kleffio/contracts/proto/identity";
+option go_package = "github.com/kleffio/plugin-sdk-go/v1;pluginsv1";
 
 import "common.proto";
 
@@ -136,7 +136,11 @@ message RoleList { repeated string roles = 1; }
 
 // ── Sessions ──────────────────────────────────────────────────────────────────
 
-message ListSessionsRequest  { string user_id = 1; }
+message ListSessionsRequest {
+  string user_id            = 1;
+  string current_session_id = 2; // hint for marking the active session
+}
+
 message ListSessionsResponse {
   oneof result {
     SessionList sessions = 1;
@@ -147,15 +151,21 @@ message ListSessionsResponse {
 message SessionList { repeated Session items = 1; }
 
 message Session {
-  string id         = 1;
-  string user_id    = 2;
-  string ip_address = 3;
-  string user_agent = 4;
-  int64  created_at = 5;
-  int64  expires_at = 6;
+  string id          = 1;
+  string user_id     = 2;
+  string ip_address  = 3;
+  string user_agent  = 4;
+  int64  created_at  = 5;
+  int64  expires_at  = 6;
+  int64  last_access = 7;
+  bool   current     = 8;
 }
 
-message RevokeSessionRequest  { string session_id = 1; }
+message RevokeSessionRequest {
+  string session_id = 1;
+  string user_id    = 2;
+}
+
 message RevokeSessionResponse {
   oneof result {
     bool  ok    = 1;
@@ -166,9 +176,9 @@ message RevokeSessionResponse {
 // ── Password / Admin ──────────────────────────────────────────────────────────
 
 message ChangePasswordRequest {
-  string user_id      = 1;
-  string old_password = 2;
-  string new_password = 3;
+  string user_id          = 1;
+  string current_password = 2;
+  string new_password     = 3;
 }
 
 message ChangePasswordResponse {
